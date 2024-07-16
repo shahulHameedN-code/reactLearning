@@ -1,13 +1,54 @@
 import Header from "./Header";
 import Content from "./Content";
 import Footer from "./Footer";
-function App(){
- 
+import { useState } from "react";
+import AddItem from "./AddItem";
+function App() {
+  const [items, setItems] = useState(JSON.parse(localStorage.getItem('todo_list')));
+
+  const [newItem, setNewItem] = useState("");
+
+  const handleCheck = (id) => {
+    const itemsList = items.map((item) =>
+      item.id === id ? { ...item, checked: !item.checked } : item
+    );
+    setItems(itemsList);
+    localStorage.setItem("todo_list",JSON.stringify(itemsList))
+  };
+
+  const handleDelete = (id) => {
+    const itemList = items.filter((item) => item.id !== id);
+    setItems(itemList);
+    localStorage.setItem("todo_list",JSON.stringify(itemList))
+  };
+
+  const handleAddItem = (e) => {
+    e.preventDefault();
+    console.log(e);
+    addItems(newItem)
+    setNewItem('')
+  };
+const addItems=(item)=>{
+  const id= items.length?items[items.length-1].id+1:0
+  const addNewItem={id:id,checked:false,description:item}
+  const listItems=[...items,addNewItem]
+  setItems(listItems)
+  localStorage.setItem("todo_list",JSON.stringify(listItems))
+}
   return (
     <div>
-      <Header/>
-      <Content/>
-      <Footer></Footer>
+      <Header />
+      <AddItem 
+      handleAddItem={handleAddItem}
+      newItem={newItem}
+      setNewItem={setNewItem}
+       />
+      <Content
+        handleDelete={handleDelete}
+        handleCheck={handleCheck}
+        items={items}
+      />
+      <Footer toDoLength={items.length} />
     </div>
   );
 }
