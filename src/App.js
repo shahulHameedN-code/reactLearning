@@ -1,28 +1,62 @@
 import Header from "./Header";
 import Content from "./Content";
 import Footer from "./Footer";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import AddItem from "./AddItem";
 import SearchItem from "./SearchItem";
+import apiRequests from "./apiRequests";
 function App() {
-  const [items, setItems] = useState(
-    JSON.parse(localStorage.getItem("todo_list"))
-  );
+  const API_URL = "http://localhost:3500/items";
+
+  const [items, setItems] = useState([]);
 
   const [newItem, setNewItem] = useState("");
   const [searchItem, setSearchItem] = useState("");
-  const handleCheck = (id) => {
+  const [fetchError, setFetchError] = useState(null);
+
+  useEffect(() => {
+    const fetchItems = async () => {
+      try {
+        const response = await fetch(API_URL);
+        const listItems = await response.json();
+        setItems(listItems);
+      } catch (err) {
+        console.log(err);
+      }
+    };
+    (async () => await fetchItems())();
+  }, []);
+
+  const handleCheck = async(id) => {
     const itemsList = items.map((item) =>
       item.id === id ? { ...item, checked: !item.checked } : item
     );
     setItems(itemsList);
-    localStorage.setItem("todo_list", JSON.stringify(itemsList));
+    
+    const checkItem=itemsList.filter((item)=>item.id===id);
+    const pachOptions = {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({checked:checkItem[0].checked}),
+    };
+    console.log("check item ---> "+JSON.stringify({checked:checkItem[0].checked}))
+    const updateUrl=`${API_URL}/${id}`
+    const errMsg=await apiRequests(updateUrl,pachOptions)
+    setFetchError(errMsg)
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = async (id) => {
     const itemList = items.filter((item) => item.id !== id);
     setItems(itemList);
-    localStorage.setItem("todo_list", JSON.stringify(itemList));
+
+    const deleteOptions = {
+      method: 'DELETE'
+    };
+    const deletUrl=`${API_URL}/${id}`
+    const errMsg=await apiRequests(deletUrl,deleteOptions)
+    
   };
 
   const handleAddItem = (e) => {
@@ -31,12 +65,20 @@ function App() {
     addItems(newItem);
     setNewItem("");
   };
-  const addItems = (item) => {
+  const addItems = async (item) => {
     const id = items.length ? items[items.length - 1].id + 1 : 0;
     const addNewItem = { id: id, checked: false, description: item };
     const listItems = [...items, addNewItem];
     setItems(listItems);
-    localStorage.setItem("todo_list", JSON.stringify(listItems));
+    const postOptions = {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(addNewItem),
+    };
+    const result = await apiRequests(API_URL, postOptions);
+    if (result) setFetchError(result);
   };
   return (
     <div>
